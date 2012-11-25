@@ -15,7 +15,12 @@ INCLUDEPATH += /opt/AMDAPP/include      # Default AMD APP SDK include path
 
 LIBS += -lOpenCL
 
-QMAKE_CXXFLAGS_RELEASE = -std=c++11 -march=native -O3 -fPIC
+QMAKE_CXX = g++-4.7 # clang++
+QMAKE_CXXFLAGS = -std=c++11 -march=native -O3 -fPIC
 
 HEADERS += \
     src/util/singleton.h \
+    src/util/utils.h
+    
+SOURCES += \
+    src/util/utils.cpp
