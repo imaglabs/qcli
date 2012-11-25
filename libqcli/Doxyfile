@@ -1,0 +1,15 @@
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = "libQCLI"
+PROJECT_BRIEF          = "QCLI is a C++11/Qt library to facilitate the development of image processing operations in OpenCL."
+
+OUTPUT_DIRECTORY       = doc
+
+TAB_SIZE               = 4
+BUILTIN_STL_SUPPORT    = YES
+
+INPUT                  = src
+RECURSIVE              = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+HTML_OUTPUT            = .

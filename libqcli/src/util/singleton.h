@@ -1,24 +1,26 @@
 #ifndef _QCLI_SINGLETON_H
 #define _QCLI_SINGLETON_H
 
-// Singleton pattern template
+/// \brief Singleton pattern template
+/// @param T should provide a default constructor.
 
 template<class T>
 class Singleton
 {
 public:
-    // Disable copy constructor
+    /// Copying is disabled
     Singleton(const Singleton&) = delete;
-    // Disable singleton asignment
+    /// Assignment is disabled
     void operator=(const Singleton&) = delete;
 
-    // Get instance (thread safe in C++11)
+    /// Get instance (thread safe in C++11)
     static T& instance() {
         static T inst;
         return inst;
     }
 
 private:
+    /// Prevent Singleton to be instantiated
     Singleton() = default;
 };
 
