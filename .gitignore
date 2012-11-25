@@ -1,20 +1,16 @@
 # C++ objects and libs
 
-*.slo
-*.lo
-*.o
-*.a
-*.la
-*.lai
-*.so
-*.dll
-*.dylib
-
-# Qt-es
-
-*.pro.user
-*.pro.user.*
-moc_*.cpp
-qrc_*.cpp
+*.[oa]
+*~
+*.bak
+*.autosave
 Makefile
+bin/
+obj/
+ui_*
+moc_*
+qrc_*
+.directory
+*.user
+*.user.*
 *-build-*
