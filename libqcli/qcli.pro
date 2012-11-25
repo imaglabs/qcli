@@ -17,7 +17,5 @@ LIBS += -lOpenCL
 
 QMAKE_CXXFLAGS_RELEASE = -std=c++11 -march=native -O3 -fPIC
 
-SOURCES += \
-
 HEADERS += \
     src/util/singleton.h \
