@@ -1,5 +1,5 @@
 /*
- *    Copyright (C) 2012 libqcli authors (see AUTHORS)
+ *   Copyright (C) 2012 by the libQCLI authors (see AUTHORS)
  *
  *   This library is free software; you can redistribute it and/or
  *   modify it under the terms of the GNU Library General Public
@@ -14,6 +14,8 @@
 
 #ifndef _QCLI_SINGLETON_H
 #define _QCLI_SINGLETON_H
+
+namespace QCLI {
 
 /// \brief Singleton pattern template.
 /// @param T should provide a public default constructor.
@@ -37,5 +39,7 @@ private:
     /// Prevent Singleton to be instantiated
     Singleton() = default;
 };
+
+} // namespace QCLI
 
 #endif // _QCLI_SINGLETON_H
