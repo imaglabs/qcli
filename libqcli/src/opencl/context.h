@@ -18,7 +18,6 @@
 #include <CL/cl.h>
 #include <vector>
 #include <string>
-#include <singleton.h>
 
 // WARNING: All methods must be thread-safe.
 
@@ -27,21 +26,31 @@ namespace QCLI {
 using namespace std;
 
 /// \brief OpenCL Context class 
+class Context;
+typedef Context& ContextRef;
 
 class Context {
   
   public:
-    Context() = default;
     ~Context();
     
     /// Default initialization for a context
     bool init();  
     
+    /// Static Singleton instance method
+    static ContextRef instance();
+    
     /// Number of OpenCL devices that are part of this context
     uint numberOfDevices() const { return devices.size(); }
     //vector<string> listDevices() const;
     
+    /// Not Copyable class
+    Context(const Context & other) = delete;
+    Context& operator=(const Context & other) = delete;
+    
   private:
+    
+    Context() = default;
     
     /// Delete all OpenCL members with the corresponding OpenCL calls
     void cleanCLObjects();
@@ -51,9 +60,13 @@ class Context {
     
 };
 
-using GlobalContext = Singleton<Context>;
-typedef Context& ContextRef;
-
+/// Thread-safe getInstance()
+ContextRef Context::instance() 
+{
+  static Context inst;
+  return inst;
+}
+  
 } // namespace QCLI
 
 #endif // _QCLI_CONTEXT_H 
