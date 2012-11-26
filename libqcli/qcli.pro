@@ -8,7 +8,9 @@ DESTDIR = bin
 OBJECTS_DIR = obj
 MOC_DIR = obj
 
-INCLUDEPATH += src/
+INCLUDEPATH += \
+    src/util \
+    src/opencl
 
 INCLUDEPATH += /usr/local/cuda/include  # Default NVIDIA CUDA SDK include path
 INCLUDEPATH += /opt/AMDAPP/include      # Default AMD APP SDK include path
@@ -20,7 +22,9 @@ QMAKE_CXXFLAGS = -std=c++11 -march=native -O3 -fPIC
 
 HEADERS += \
     src/util/singleton.h \
-    src/util/utils.h
+    src/util/utils.h \
+    src/opencl/context.h
     
 SOURCES += \
-    src/util/utils.cpp
+    src/util/utils.cpp \
+    src/opencl/context.cpp
