@@ -25,7 +25,7 @@ using namespace std;
 /// \brief Utility functions
 
 /// Maps the OpenCL error code to a string
-string clErrorToString(cl_int err)
+string clErrorToString(cl_int err);
 
 /// Checks for errors in OpenCL API calls, and prints useful information
 bool checkCLError(cl_int error, string message);
