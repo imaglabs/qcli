@@ -9,7 +9,7 @@ int main()
   
   cout << "QCLI Test" << endl;
   
-  ContextRef context = Context::instance();
+  auto context= QCLI::ctx();
   context.init();
   
   cout << "End." << endl;
