@@ -23,8 +23,14 @@ QMAKE_CXXFLAGS = -std=c++11 -march=native -O3 -fPIC
 HEADERS += \
     src/util/singleton.h \
     src/util/utils.h \
-    src/opencl/context.h
-    
+    src/opencl/context.h \
+    src/image.h \
+    src/opencl/device.h \
+    src/opencl/devicemanager.h
+
 SOURCES += \
     src/util/utils.cpp \
-    src/opencl/context.cpp
+    src/opencl/context.cpp \
+    src/image.cpp \
+    src/opencl/device.cpp \
+    src/opencl/devicemanager.cpp
