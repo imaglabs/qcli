@@ -35,6 +35,7 @@ Image<format>::Image(int width, int height, bool setBlack, bool allocHostMem, bo
 {
     assert(width > 0);
     assert(height > 0);
+    assert(!(setBlack and !(allocHostMem or allocDevMem)));
 
     if(allocDevMem)  allocDev();
     if(allocHostMem) allocHost();
@@ -116,11 +117,6 @@ void Image<format>::clear(bool host, bool dev)
 
     _hostValid= wroteHost;
     _devValid= wroteDev;
-
-    if(wroteHost and wroteDev) {
-        _hostValid= true;
-        _devValid= true;
-    }
 }
 
 } // namespace QCLI

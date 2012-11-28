@@ -50,7 +50,7 @@ class Image
 {
 public:
     /// Creates an empty image of a certain size
-    Image(int width, int height, bool setBlack=true, bool allocHostMem=false,
+    Image(int width, int height, bool setBlack=false, bool allocHostMem=false,
           bool allocDevMem=false);
     /// Creates an empty image of a certain size
     Image(QSize size, bool setBlack=true, bool allocHostMem=false, bool allocDevMem=false)
