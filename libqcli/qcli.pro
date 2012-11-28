@@ -8,9 +8,7 @@ DESTDIR = bin
 OBJECTS_DIR = obj
 MOC_DIR = obj
 
-INCLUDEPATH += \
-    src/util \
-    src/opencl
+INCLUDEPATH += src/
 
 INCLUDEPATH += /usr/local/cuda/include  # Default NVIDIA CUDA SDK include path
 INCLUDEPATH += /opt/AMDAPP/include      # Default AMD APP SDK include path
@@ -25,12 +23,10 @@ HEADERS += \
     src/util/utils.h \
     src/opencl/context.h \
     src/image.h \
-    src/opencl/device.h \
     src/opencl/devicemanager.h
 
 SOURCES += \
     src/util/utils.cpp \
     src/opencl/context.cpp \
     src/image.cpp \
-    src/opencl/device.cpp \
     src/opencl/devicemanager.cpp

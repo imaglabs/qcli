@@ -13,11 +13,90 @@
  */
 
 #include "devicemanager.h"
+#include "util/utils.h"
 
 namespace QCLI {
 
 DeviceManager::DeviceManager()
 {
+    // Get the platform information
+    cl_int err= clGetPlatformIDs(1, &_platform, nullptr);
+    if(checkCLError(err, "clGetPlatformIDs")) {
+        _platform= nullptr;
+        _initError.ref();
+        return;
+    }
+
+    // List all the available devices
+    _allDevs= devicesOfType(CL_DEVICE_TYPE_ALL);
+    if(_allDevs.empty())
+        _initError.ref();
+}
+
+QVector<cl_device_id> DeviceManager::devicesOfType(cl_device_type type)
+{
+    auto ret= QVector<cl_device_id>();
+    if(_initError)
+        return ret;
+
+    QMutexLocker locker(&_lock);
+    cl_int err;
+
+    // Query number of devices of type type
+    const int maxDevices= 32;
+    cl_uint devCount;
+    err= clGetDeviceIDs(_platform, type, maxDevices, nullptr, &devCount);
+    if(checkCLError(err, "clGetDeviceIDs"))
+        return ret;
+
+    // Get devices IDs
+    ret.resize(devCount);
+    err= clGetDeviceIDs(_platform, CL_DEVICE_TYPE_ALL, maxDevices, ret.data(), &devCount);
+    if(checkCLError(err, "clGetDeviceIDs"))
+        ret.clear();
+
+    return ret;
+}
+
+bool DeviceManager::selectDevices(cl_device_type type)
+{
+    if(_initError or _devsSelected)
+        return false;
+
+    // Get list of devices of this type (devicesOfType is already thread-safe)
+    auto devsOfType= devicesOfType(type);
+    // Find the indices of these devices
+    QList<int> indices;
+    foreach(const auto& dev, devsOfType) {
+        const int index= _allDevs.indexOf(dev);
+        if(index==-1) return false;
+        indices << index;
+    }
+
+    // Select those devices
+    return selectDevices(indices);
+}
+
+bool DeviceManager::selectDevices(QList<int> devIds)
+{
+    if(_initError or _devsSelected or devIds.empty())
+        return false;
+
+    QMutexLocker locker(&_lock);
+
+    _devs.resize(devIds.count());
+    for(int i=0; i<devIds.count(); i++) {
+        // For each requested id...
+        const int id= devIds[i];
+        // ...make sure it is valid
+        if(id >= _allDevs.count() or devIds.count(id)>1)
+            return false;
+        // Store the corresponding cl_device_id in _devs
+        _devs[i]= _allDevs[id];
+    }
+
+    _devsSelected.ref();
+    return true;
 }
 
 } // namespace QCLI

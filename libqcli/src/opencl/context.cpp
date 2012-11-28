@@ -14,97 +14,18 @@
 
 #include "context.h"
 #include "util/utils.h"
+#include "devicemanager.h"
 
 // Includes for OS-specific OpenGL support
 #ifdef __MACOSX
-#  define GL_SHARING_EXTENSION "cl_APPLE_gl_sharing"
 #  include <OpenGL/OpenGL.h>
 #elif _WIN32
-#  define GL_SHARING_EXTENSION "cl_khr_gl_sharing"
 #  include <wingdi.h>
 #else // Linux
-#  define GL_SHARING_EXTENSION "cl_khr_gl_sharing"
 #  include <GL/glx.h>
 #endif
 
 namespace QCLI {
-
-bool Context::init(bool useOpenGL, cl_device_type devType, QList<cl_device_id> devs)
-{
-    QMutexLocker locker(&_lock);
-
-    if(_initialized) {
-        qDebug() << "Already initialized.";
-        return false;
-    }
-    _openGL= useOpenGL;
-    _devType= devType;
-
-    QString fname(__func__);
-    cl_int err {};
-
-    // Get the platform information
-    cl_platform_id platform;
-    err= clGetPlatformIDs(1, &platform, nullptr);
-    if(checkerr(err, fname + ": clGetPlatformIDs()"))
-        return false;
-
-    // Select all the OpenCL devices that are going to be part of this context
-    // First get the number of OpenCL devices
-    const int maxDevices= 32;
-    cl_uint numDevices {};
-    err= clGetDeviceIDs(platform, devType, maxDevices, nullptr, &numDevices);
-    if(checkerr(err, fname + ": clGetDeviceIDs()"))
-        return false;
-
-    // resize the vector to put the devices
-    _devices.resize(numDevices, nullptr);
-    err= clGetDeviceIDs(platform, devType, maxDevices, _devices.data(), &numDevices);
-    if(checkerr(err, fname + ": clGetDeviceIDs()"))
-        return false;
-
-    // If the user specified the device list, check that they exist and use it
-    foreach(const cl_device_id& id, devs) {
-        if(!_devices.contains(id)) {
-            qDebug() << "Device" << id << "not found.";
-            return false;
-        }
-    }
-    if(!devs.empty())
-        _devices= devs.toVector().toStdVector();
-
-    QVector<cl_context_properties> props;
-    if(useOpenGL) {
-        // Add OpenGL properties
-        #ifdef __MACOSX // Apple (untested)
-            props << CL_CGL_SHAREGROUP_KHR;
-            props << static_cast<cl_context_properties>(CGLGetShareGroup(CGLGetCurrentContext()));
-            props << CL_CONTEXT_PLATFORM;
-            props << static_cast<cl_context_properties>(platform);
-        #elif _WIN32 // Windows (untested)
-            props << CL_GL_CONTEXT_KHR
-            props << static_cast<cl_context_properties>(wglGetCurrentContext());
-            props << CL_WGL_HDC_KHR
-            props << static_cast<cl_context_properties>(wglGetCurrentDC());
-        #else // Linux/GLX
-            props << CL_GL_CONTEXT_KHR;
-            props << static_cast<cl_context_properties>(glXGetCurrentContext());
-            props << CL_GLX_DISPLAY_KHR;
-            props << static_cast<cl_context_properties>(glXGetCurrentDisplay());
-            props << static_cast<cl_context_properties>(platform);
-        #endif
-        props << 0;
-    }
-
-    // Create OpenCL context
-    const auto propsPtr= props.empty() ? nullptr : props.data();
-    _context= clCreateContext(propsPtr, _devices.size(), _devices.data(), nullptr, nullptr, &err);
-    if(checkerr(err, fname + ": clCreateContext()"))
-        return false;
-
-    _initialized= true;
-    return true;
-}
 
 Context::~Context()
 {
@@ -121,11 +42,83 @@ Context::~Context()
     clReleaseContext(_context);
 }
 
-cl_context Context::context() const
+
+bool Context::init(cl_device_type devType, bool glInterop)
 {
-    // Hidden initialization with default parameters
-    if(!_initialized)
-        init();
+    // Select the devices of type devType (thread-safe)
+    if(!devMgr().selectDevices(devType))
+        return false;
+    // Create context
+    return createContext(glInterop);
+}
+
+bool Context::init(QList<int> devIds, bool glInterop)
+{
+    // Select devices in the list (thread-safe)
+    if(!devMgr().selectDevices(devIds))
+        return false;
+    // Create context
+    return createContext(glInterop);
+}
+
+bool Context::createContext(bool glInterop)
+{
+    if(_initialized) {
+        qDebug() << "Already initialized.";
+        return false;
+    }
+
+    QMutexLocker locker(&_lock);
+
+    _glInterop= glInterop;
+
+    QVector<cl_context_properties> props;
+    if(_glInterop) {
+        // Add OpenGL properties
+        #ifdef __MACOSX // Apple (untested)
+            props << CL_CGL_SHAREGROUP_KHR;
+            props << reinterpret_cast<cl_context_properties>(CGLGetShareGroup(CGLGetCurrentContext()));
+            props << CL_CONTEXT_PLATFORM;
+            props << reinterpret_cast<cl_context_properties>(devMgr().platform());
+        #elif _WIN32 // Windows (untested)
+            props << CL_GL_CONTEXT_KHR
+            props << reinterpret_cast<cl_context_properties>(wglGetCurrentContext());
+            props << CL_WGL_HDC_KHR
+            props << reinterpret_cast<cl_context_properties>(wglGetCurrentDC());
+        #else // Linux/GLX
+            props << CL_GL_CONTEXT_KHR;
+            props << reinterpret_cast<cl_context_properties>(glXGetCurrentContext());
+            props << CL_GLX_DISPLAY_KHR;
+            props << reinterpret_cast<cl_context_properties>(glXGetCurrentDisplay());
+            props << reinterpret_cast<cl_context_properties>(devMgr().platform());
+        #endif
+        props << 0;
+    }
+
+    // Create OpenCL context
+    cl_int err;
+    const auto propsPtr= props.empty() ? nullptr : props.data();
+    const auto devs= devMgr().devices(); // Get selected devices from the dev manager
+    _context= clCreateContext(propsPtr, devs.size(), devs.data(), nullptr, nullptr, &err);
+    if(checkCLError(err, "clCreateContext"))
+        return false;
+
+    _initialized= true;
+    return true;
+}
+
+bool Context::supportsGL()
+{
+    if(!_initialized and !init())
+        return false;
+    QMutexLocker l(&_lock);
+    return _glInterop;
+}
+
+cl_context Context::context()
+{
+    if(!_initialized and !init())
+        return nullptr;
     QMutexLocker locker(&_lock);
     return _context;
 }

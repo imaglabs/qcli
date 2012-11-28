@@ -16,12 +16,9 @@
 #define _QCLI_DEVICEMANAGER_H
 
 #include <QtCore>
-#include "device.h"
+#include <CL/cl.h>
 
 namespace QCLI {
-
-/// Global functions to access the Context instance
-DeviceManager& devMgr() { return DeviceManager::instance(); }
 
 class DeviceManager
 {
@@ -34,19 +31,51 @@ public:
         return inst;
     }
 
-    /// Disable copies
+    /// Returns true if there was a problem in the constructor listing the devices
+    bool initError() const { return _initError; }
+
+    /// Selects the used devices by type
+    /// @retval false if there are no devices of this type or if the devices where already selected
+    bool selectDevices(cl_device_type type= CL_DEVICE_TYPE_GPU);
+    /// Selects the used devices from a list of indices (following the order of clGetDeviceIDs)
+    /// @retval false if an index is out of bounds or if the devices where already selected
+    bool selectDevices(QList<int> devIds);
+
+    /// Returns the OpenCL platform object
+    cl_platform_id platform() const { QMutexLocker l(&_lock); return _platform; }
+
+    /// Returns the vector of selected devices
+    QVector<cl_device_id> devices() const { QMutexLocker l(&_lock); return _devs; }
+
+    /// Disable copying
     DeviceManager(const DeviceManager& other) = delete;
     /// Disable assignments
     DeviceManager& operator=(const DeviceManager& other) = delete;
 
 private:
     /// Hide constructor
-    DeviceManager() = default;
+    DeviceManager();
 
-    QMutex _lock;
+    /// Returns the devices of the requested type (empty vector on error)
+    /// Use CL_DEVICE_TYPE_ALL to get all devices
+    QVector<cl_device_id> devicesOfType(cl_device_type type);
 
-    QVector<Device> _devs;
+    // OpenCL
+    cl_platform_id _platform= nullptr;
+    // State
+    mutable QMutex _lock; // Mutable so it can be used in const getters
+    QAtomicInt _initError;
+    QAtomicInt _devsSelected;
+
+    /// All the devices in the system
+    QVector<cl_device_id> _allDevs;
+    /// Devices selected to be used in the context
+    QVector<cl_device_id> _devs;
 };
+
+/// Global function to access the DeviceManager
+inline
+DeviceManager& devMgr() { return DeviceManager::instance(); }
 
 } // namespace QCLI
 

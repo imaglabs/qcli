@@ -17,15 +17,16 @@
 
 #include <QtCore>
 #include <CL/cl.h>
+#include <CL/cl_gl.h>
 
 namespace QCLI {
 
-/// Global functions to access the Context instance
-Context& ctx() { return Context::instance(); }
-cl_context clctx() { return ctx().context(); }
-
 /// \brief OpenCL context singleton
-/// All Context functions are thread-safe.
+/**
+ * All Context functions are thread-safe.
+ * Calling any functions other than instance(), init() and initialized()
+ * initializes the context if not initialized before.
+*/
 
 class Context
 {
@@ -38,45 +39,44 @@ public:
         return inst;
     }
 
-    /// Default initialization for a context
-    /// @retval false on error
-    bool init(bool useOpenGL= true, cl_device_type devType= CL_DEVICE_TYPE_ALL,
-              QList<cl_device_id> devs= QList<cl_device_id>());
+    /// Initialize the context for devices of a certain type
+    /// @retval false on error or if already initialized
+    bool init(cl_device_type devType= CL_DEVICE_TYPE_GPU, bool glInterop= true);
+    /// Initialize the context for a list devices indexes
+    /// @retval false on error or if already initialized
+    bool init(QList<int> devIds, bool glInterop= true);
 
-    /// Disable copies
+    /// Returns true if the context was initialized
+    bool initialized() const { return _initialized; }
+    /// Returns true if the context was initialized with OpenGL support
+    bool supportsGL();
+
+    /// Returns the OpenCL context
+    cl_context context();
+
+    /// Disable copying
     Context(const Context &other) = delete;
     /// Disable assignments
     Context& operator=(const Context& other) = delete;
 
-    /// Returns true if the context was initialized
-    bool initialized() const { return _initialized; }
-    /// Returns a copy of the context device IDs
-    QVector<cl_device_id> devices() const { QMutexLocker l(&_lock); return devices; }
-    /// Number of OpenCL devices that are part of this context
-    uint deviceCount() const { QMutexLocker l(&_lock); return _devices.size(); }
-    /// Returns true if the context was initialized with OpenGL support
-    bool supportsGL() const { QMutexLocker l(&_lock); return _openGL; }
-
-    /// Returns the OpenCL context
-    /// Calls init if not initialized to support hidden initialization
-    cl_context context() const;
-
 private:
     /// Hide constructor
     Context() = default;
+    bool createContext(bool glInterop);
 
-    // Init parameters
-    QVector<cl_device_id> _devices;
-    bool _openGL= false;
-    cl_device_type _devType= CL_DEVICE_TYPE_ALL;
-
-    // Context state
-    QMutex _lock;
-    QAtomicInt _initialized= 0;
+    // State
+    mutable QMutex _lock; // Mutable so it can be used in const getters
+    QAtomicInt _initialized;
 
     // OpenCL
     cl_context _context= nullptr;
+    bool _glInterop= true;
 };
+
+/// Global function to access the Context instance
+inline Context& ctx() { return Context::instance(); }
+/// Global function to access the OpenCL context object
+inline cl_context clctx() { return ctx().context(); }
 
 
 } // namespace QCLI

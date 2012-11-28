@@ -12,7 +12,7 @@
  *   Library General Public License for more details.
  */
 
-#include <utils.h>
+#include "utils.h"
 #include <iostream>
 
 namespace QCLI {
@@ -72,15 +72,15 @@ string clErrorToString(cl_int err)
   }
 }
 
-bool checkCLError(cl_int error, string message)
+bool checkCLError_func(cl_int error, string funcName, string message)
 {
     if(error == CL_SUCCESS)
         return false;
-    cerr << "** OpenCL Error '" << clErrorToString(error);
+    cerr << "** OpenCL Error '" << clErrorToString(error) << "' ("<< funcName <<")";
     if(message.empty())
-        cerr << "': " << message << "." << endl;
+        cerr << ": " << message << "." << endl;
     else
-        cerr << "'." << endl;
+        cerr << "." << endl;
     return true;
 }
 
