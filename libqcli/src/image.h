@@ -15,11 +15,13 @@
 #ifndef _QCLI_IMAGE_H
 #define _QCLI_IMAGE_H
 
-namespace QCLI {
-
 #include <QtCore>
+#include <QImage>
 #include <CL/cl.h>
-#include <stdint.h>
+#include <cstdint>
+#include <assert.h>
+
+namespace QCLI {
 
 /// Image format enum type, packs format information such as BPP and channel count.
 typedef uint32_t ifmt_t;

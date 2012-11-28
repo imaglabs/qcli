@@ -45,7 +45,7 @@ Image<format>::Image(int width, int height, bool setBlack, bool allocHostMem, bo
 }
 
 template<ImageFmt format>
-Image<format>::Image(QImage image, bool allocHost=false, bool allocDev=false)
+Image<format>::Image(QImage image, bool allocHost, bool allocDev)
 {
 }
 
@@ -55,7 +55,7 @@ bool Image<format>::allocHost()
     QMutexLocker locker(&_lock);
 
     _hostValid= false;
-    _hostSize= _width * _height * iFmtBPP(format);
+    _hostSize= _width * _height * iFmtBPP((ifmt_t)format);
 
     // Malloc/realloc host buffer
     _hostBuffer= static_cast<char*>(realloc(_hostBuffer, _hostSize));
@@ -73,7 +73,7 @@ bool Image<format>::allocDev()
     QMutexLocker locker(&_lock);
 
     _devValid= false;
-    _devSize= _width * _height * iFmtBPP(format);
+    _devSize= _width * _height * iFmtBPP((ifmt_t)format);
 
     // Malloc / delete+malloc device buffer (no realloc in opencl)
     cl_int err;
