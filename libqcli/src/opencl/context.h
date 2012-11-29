@@ -21,11 +21,11 @@
 
 namespace QCLI {
 
-/// \brief OpenCL context singleton
-/**
- * All Context functions are thread-safe.
- * Calling any functions other than instance(), init() and initialized()
- * initializes the context if not initialized before.
+/** \brief OpenCL context singleton
+ *
+ *  All functions are thread-safe.
+ *  Calling any functions other than instance(), init() and initialized()
+ *  initializes the context if not initialized before.
 */
 
 class Context

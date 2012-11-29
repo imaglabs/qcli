@@ -25,8 +25,10 @@
 
 namespace QCLI {
 
-/// \brief QCLI Image. Represents an image with a host and device version
-/// This class is *not* thread-safe.
+/** \brief Represents a QCLI image that has both a host and device version.
+ *
+ *  This class is *not* thread-safe.
+ */
 
 template<IFmt format>
 class Image

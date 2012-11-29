@@ -15,21 +15,22 @@ INCLUDEPATH += /opt/AMDAPP/include      # Default AMD APP SDK include path
 
 LIBS += -lOpenCL
 
-QMAKE_CXX = g++-4.7 # clang++
+QMAKE_CXX = g++
+#QMAKE_CXX = clang++
+
 QMAKE_CXXFLAGS = -std=c++11 -march=native -O3 -fPIC
 
 HEADERS += \
-    src/util/singleton.h \
-    src/util/utils.h \
     src/opencl/context.h \
-    src/image.h \
     src/opencl/devicemanager.h \
+    src/util/utils.h \
     src/ifmt.h \
+    src/image.h \        
     src/QCLI
 
 SOURCES += \
-    src/util/utils.cpp \
     src/opencl/context.cpp \
-    src/image.cpp \
     src/opencl/devicemanager.cpp \
-    src/ifmt.cpp
+    src/util/utils.cpp \
+    src/ifmt.cpp \
+    src/image.cpp

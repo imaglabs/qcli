@@ -1,6 +1,8 @@
 #ifndef _QCLI_QCLI
 #define _QCLI_QCLI
 
+/// \brief Convenience include for the user
+
 #include "image.h"
 #include "opencl/context.h"
 #include "opencl/devicemanager.h"

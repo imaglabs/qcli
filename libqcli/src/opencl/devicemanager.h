@@ -20,6 +20,11 @@
 
 namespace QCLI {
 
+/** \brief Manager of OpenCL compute devices
+ *
+ *  All functions are thread-safe.
+ */
+
 class DeviceManager
 {
     // Context will call some protected functions
