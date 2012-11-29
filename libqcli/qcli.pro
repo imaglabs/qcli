@@ -24,7 +24,8 @@ HEADERS += \
     src/opencl/context.h \
     src/image.h \
     src/opencl/devicemanager.h \
-    src/ifmt.h
+    src/ifmt.h \
+    src/QCLI
 
 SOURCES += \
     src/util/utils.cpp \

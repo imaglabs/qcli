@@ -1,8 +1,11 @@
 #include "ifmt.h"
 
+#include <cassert>
+
 namespace QCLI {
 
-cl_image_format toCLFormat(IFmt fmt)
+template<IFmt fmt> constexpr
+cl_image_format toCLFormat()
 {
     cl_channel_order order= CL_ARGB;
     cl_channel_type type= CL_UNORM_INT8;
@@ -24,7 +27,8 @@ cl_image_format toCLFormat(IFmt fmt)
     return ret;
 }
 
-QImage::Format toQtFormat(IFmt fmt)
+template<IFmt fmt> constexpr
+QImage::Format toQtFormat()
 {
     // ARGB is the only QCLI format supported directly by QImage
     return fmt==IFmt::ARGB ? QImage::Format_ARGB32 : QImage::Format_Invalid;
@@ -36,5 +40,6 @@ bool fromQtFormat(QImage::Format src, IFmt& dst)
     dst= IFmt::ARGB;
     return src==QImage::Format_ARGB32 or src==QImage::Format_RGB32;
 }
+
 
 } // namespace QCLI

@@ -84,4 +84,13 @@ bool checkCLError_func(cl_int error, string funcName, string message)
     return true;
 }
 
+QSharedPointer<char> clFillingBlack()
+{
+    // Return buffer big enough for the worst case (4 floats)
+    const int size= 4 * sizeof(float);
+    QSharedPointer<char> data(new char[size]);
+    if(data) memset(data.data(), 0, size);
+    return data;
+}
+
 } // namespace QCLI

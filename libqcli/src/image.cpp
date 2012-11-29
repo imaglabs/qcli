@@ -103,7 +103,7 @@ bool Image<format>::fromQImage(QImage image, bool upload, bool freeConvBuffer)
         image= image.convertToFormat(QImage::Format_ARGB32);
 
     // Check if we can memcpy or a conversion must be performed
-    if(toQtFormat(format) != QImage::Format_Invalid) {
+    if(toQtFormat<format>() != QImage::Format_Invalid) {
         memcpy(_hostBuffer, image.constBits(), _bytes);
         _hostValid= true;
         _devValid= false;
@@ -146,7 +146,7 @@ template<IFmt format>
 bool Image<format>::_allocHost()
 {
     _hostValid= false;
-    _bytes= _width * _height * iFmtBPP((ifmt_t)format);
+    _bytes= _width * _height * iFmtBPP(format);
 
     // Malloc/realloc host buffer
     _hostBuffer= static_cast<char*>(realloc(_hostBuffer, _bytes));
@@ -161,7 +161,7 @@ template<IFmt format>
 bool Image<format>::_allocDev()
 {
     _devValid= false;
-    _bytes= _width * _height * iFmtBPP((ifmt_t)format);
+    _bytes= _width * _height * iFmtBPP(format);
 
     // Malloc / delete+malloc device buffer (no realloc in opencl)
     cl_int err;
@@ -169,7 +169,7 @@ bool Image<format>::_allocDev()
         err= clReleaseMemObject(_devBuffer);
         checkCLError(err, "clReleaseMemObject");
     }
-    auto clFormat= toCLFormat(format);
+    auto clFormat= toCLFormat<format>();
     _devBuffer= clCreateImage2D(clctx(), CL_MEM_READ_WRITE, &clFormat, _width, _height,
                                 0, nullptr, &err);
     if(checkCLError(err, "clCreateBuffer")) {
@@ -188,7 +188,7 @@ bool Image<format>::_allocConv()
     assert(!_convBuffer);
 
     // Conversion buffer is always of type ARGB
-    auto clFormat= toCLFormat(IFmt::ARGB);
+    auto clFormat= toCLFormat<IFmt::ARGB>();
     cl_int err;
     _convBuffer= clCreateImage2D(clctx(), CL_MEM_READ_WRITE, &clFormat, _width, _height,
                                  0, nullptr, &err);
@@ -217,8 +217,12 @@ void Image<format>::_setBlack(bool host, bool dev)
     }
     // Clear dev memory
     if(dev and _devBuffer) {
+        cl_int err;
         #ifdef CL_VERSION_1_2
-            // TODO implement using clEnqueueFillImage()
+            // TODO test
+            err= clEnqueueFillImage(_queue, _devBuffer, clFillingBlack().data(),
+                                    _origin, _region, 0, nullptr, nullptr);
+            checkCLError(err, "clEnqueueFillImage");
         #else
             // TODO implement with kernel!
         #endif

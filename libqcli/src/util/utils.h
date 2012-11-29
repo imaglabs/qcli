@@ -15,6 +15,7 @@
 #ifndef _QCLI_CLUTILS_H
 #define _QCLI_CLUTILS_H
 
+#include <QtCore>
 #include <CL/cl.h>
 #include <string>
 
@@ -31,6 +32,9 @@ string clErrorToString(cl_int err);
 #define checkCLError(error, message) (checkCLError_func(error, __func__, message))
 /// Checks for errors in OpenCL API calls, and prints useful information
 bool checkCLError_func(cl_int error, string funcName, string message);
+
+/// Returns a black fill_color for clEnqueueFillImage
+QSharedPointer<char> clFillingBlack();
 
 } // namespace QCLI
 

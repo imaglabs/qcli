@@ -1,0 +1,8 @@
+#ifndef _QCLI_QCLI
+#define _QCLI_QCLI
+
+#include "image.h"
+#include "opencl/context.h"
+#include "opencl/devicemanager.h"
+
+#endif // _QCLI_QCLI

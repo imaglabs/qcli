@@ -30,17 +30,11 @@ ifmt_t iFmtPack(uint8_t type, uint8_t bpp, uint8_t chanCount)
     { return (type << 16) | (bpp << 8) | chanCount; }
 
 /// Unpack format type from an ifmt_t
-constexpr inline
-uint8_t iFmtType(ifmt_t format)
-    { return (format >> 16) & 0xFF; }
+constexpr inline uint8_t iFmtType(ifmt_t format) { return (format >> 16) & 0xFF; }
 /// Unpack format BPP from an ifmt_t
-constexpr inline
-uint8_t iFmtBPP(ifmt_t format)
-    { return (format >> 8) & 0xFF; }
+constexpr inline uint8_t iFmtBPP(ifmt_t format) { return (format >> 8) & 0xFF; }
 /// Unpack format chan count from an ifmt_t
-constexpr inline
-uint8_t iFmtChanCount(ifmt_t format)
-    { return format & 0xFF; }
+constexpr inline uint8_t iFmtChanCount(ifmt_t format) { return format & 0xFF; }
 
 /// Strict enum of image formats supported as template parameter of Image
 enum class IFmt : ifmt_t
@@ -55,14 +49,25 @@ enum class IFmt : ifmt_t
     LUMA32F = iFmtPack(7,  32, 1)  /// Luma: 32-bit float            [0..1]
 };
 
+// Unpack functions for IFmt (why is this necessary?)
+/// Unpack format type from a IFmt
+constexpr inline uint8_t iFmtType(IFmt format) { return (((ifmt_t)format) >> 16) & 0xFF; }
+/// Unpack format BPP from an IFmt
+constexpr inline uint8_t iFmtBPP(IFmt format) { return (((ifmt_t)format) >> 8) & 0xFF; }
+/// Unpack format chan count from an IFmt
+constexpr inline uint8_t iFmtChanCount(IFmt format) { return ((ifmt_t)format) & 0xFF; }
+
+
 //
 // Format equivalents: QCLI/QImage/OpenCL
 //
 
 /// All QCLI formats are valid OpenCL formats
-cl_image_format toCLFormat(IFmt fmt);
+template<IFmt fmt> constexpr
+cl_image_format toCLFormat();
 /// @retval QImage::Format_Invalid if there is not a valid equivalent
-QImage::Format toQtFormat(IFmt fmt);
+template<IFmt fmt> constexpr
+QImage::Format toQtFormat();
 /// @retval false if there is not valid equivalent
 bool fromQtFormat(QImage::Format src, IFmt& dst);
 
