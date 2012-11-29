@@ -13,7 +13,10 @@
  */
 
 #include "devicemanager.h"
+
+#include <cassert>
 #include "util/utils.h"
+#include "opencl/context.h"
 
 namespace QCLI {
 
@@ -31,6 +34,12 @@ DeviceManager::DeviceManager()
     _allDevs= devicesOfType(CL_DEVICE_TYPE_ALL);
     if(_allDevs.empty())
         _initError.ref();
+}
+
+DeviceManager::~DeviceManager()
+{
+    foreach(const auto& queue, _queues)
+        clReleaseCommandQueue(queue);
 }
 
 QVector<cl_device_id> DeviceManager::devicesOfType(cl_device_type type)
@@ -94,9 +103,20 @@ bool DeviceManager::selectDevices(QList<int> devIds)
         // Store the corresponding cl_device_id in _devs
         _devs[i]= _allDevs[id];
     }
-
-    _devsSelected.ref();
+    // Context will now call setQueues and only then the devices are marked as
+    // selected (with _devsSelected)
     return true;
 }
+
+void DeviceManager::setQueues(QVector<cl_command_queue> queues)
+{
+    QMutexLocker locker(&_lock);
+    assert(!_queues.count());
+    assert(queues.count() == _devs.count());
+    _queues= queues;
+    // Now store the number of selected devices in an atomic int
+    _devsSelected= _devs.count();
+}
+
 
 } // namespace QCLI

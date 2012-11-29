@@ -17,6 +17,8 @@
 
 #include <QtCore>
 #include <QImage>
+
+#define CL_USE_DEPRECATED_OPENCL_1_1_APIS
 #include <CL/cl.h>
 
 #include "ifmt.h"
@@ -31,21 +33,21 @@ class Image
 {
 public:
     /// Creates an empty image of a certain size
-    Image(int width, int height, bool setBlack=false, bool allocHost=false,
+    Image(int width, int height, int devId= 0, bool setBlack=false, bool allocHost=false,
           bool allocDev=false);
 
     /// Creates an empty image of a certain size
-    Image(QSize size, bool setBlack=true, bool allocHost=false, bool allocDev=false)
-        : Image(size.width(), size.height(), setBlack, allocHost, allocDev) { }
+    Image(QSize size, int devId= 0, bool setBlack=true, bool allocHost=false, bool allocDev=false)
+        : Image(size.width(), size.height(), devId, setBlack, allocHost, allocDev) { }
 
     /// Creates and image from a QImage
-    Image(QImage image, bool allocDev=false, bool upload= false);
+    Image(QImage image, bool allocDev=false, int devId=0, bool upload=false, bool freeConvBuffer=false);
 
     ~Image();
 
     /// Load data from a QImage (must be of the same size)
     /// @retval false on error
-    bool fromImage(QImage image, bool upload= false);
+    bool fromQImage(QImage image, bool upload= false, bool freeConvBuffer=false);
 
     int width() { return _width; }
     int height() { return _height; }
@@ -53,21 +55,31 @@ public:
 private:
     bool _allocHost();
     bool _allocDev();
+    bool _allocConv();
     void _setBlack(bool host, bool dev);
     void _upload();
     void _download();
 
     // Host buffer
-    cl_mem _devBuffer= nullptr;
-    bool _devValid= false;
-    // Device buffer
     char* _hostBuffer= nullptr;
     bool _hostValid= false;
+    // Device buffer
+    cl_mem _devBuffer= nullptr;
+    bool _devValid= false;
+    // Device conversion buffer (always of type ARGB)
+    cl_mem _convBuffer= nullptr;
 
     // Image properties
+    int _width;  // Forced init in the ctors
+    int _height; // Forced init in the ctors
+    int _devId;  // Forced init in the ctors
     int _bytes= 0;
-    int _width= 0;
-    int _height= 0;
+
+    // Copy of the device queue (OpenCL calls using queue are thread-safe)
+    cl_command_queue _queue= nullptr;
+    // "origin and region" for the full image, used for OpenCL image operations
+    size_t _origin[3] {0, 0, 0};
+    size_t _region[3]; // Initialized in the ctors
 };
 
 } // namespace QCLI

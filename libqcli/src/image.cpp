@@ -14,8 +14,9 @@
 
 #include "image.h"
 
-#include <assert.h>
+#include <cassert>
 #include "opencl/context.h"
+#include "opencl/devicemanager.h"
 #include "util/utils.h"
 
 namespace QCLI {
@@ -25,12 +26,22 @@ namespace QCLI {
 //
 
 template<IFmt format>
-Image<format>::Image(int width, int height, bool setBlack, bool allocHost, bool allocDev)
-    : _width(width), _height(height)
+Image<format>::Image(int width, int height, int devId, bool setBlack, bool allocHost, bool allocDev)
+    : _width(width), _height(height), _devId(devId)
 {
+    // Use {} ctor when QtCreator parses it ok...
+    _region[0]= width;
+    _region[1]= height;
+    _region[2]= 1;
+
     assert(width > 0);
     assert(height > 0);
     assert(!setBlack or (allocHost or allocDev));
+    // Make sure the context is initialized so the device queue is ready
+    if(!ctx().initialized()) ctx().init();
+    // Get the device queue and verify devId at the same time
+    _queue= devMgr().queue(devId)
+    assert(_queue);
 
     if(allocDev)  _allocDev();
     if(allocHost) _allocHost();
@@ -40,26 +51,35 @@ Image<format>::Image(int width, int height, bool setBlack, bool allocHost, bool 
 }
 
 template<IFmt format>
-Image<format>::Image(QImage image, bool allocDev, bool upload)
-    : _width(image.width()), _height(image.height())
+Image<format>::Image(QImage image, bool allocDev, int devId, bool upload, bool freeConvBuffer)
+    : _width(image.width()), _height(image.height()), _devId(devId)
 {    
-    assert(!image.isNull());
+    // Use {} ctor when QtCreator parses it ok...
+    _region[0]= width;
+    _region[1]= height;
+    _region[2]= 1;
+
+    assert(!image.isNull() and image.width()>0 and image.height()>0);
     assert(!upload or allocDev);
+    // Make sure the context is initialized so the device queue is ready
+    if(!ctx().initialized()) ctx().init();
+    // Get the device queue and verify devId at the same time
+    _queue= devMgr().queue(devId)
+    assert(_queue);
 
     if(allocDev)
         _allocDev();
-    fromImage(image, upload);
+    fromQImage(image, upload, freeConvBuffer);
 }
 
 template<IFmt format>
 Image<format>::~Image()
 {
-    if(_devBuffer) {
+    if(_devBuffer)
         clReleaseMemObject(_devBuffer);
-        _devBuffer= nullptr;
-    }
+    if(_convBuffer)
+        clReleaseMemObject(_convBuffer);
     free(_hostBuffer);
-    _hostBuffer= nullptr;
 }
 
 //
@@ -67,7 +87,7 @@ Image<format>::~Image()
 //
 
 template<IFmt format>
-bool Image<format>::fromImage(QImage image, bool upload)
+bool Image<format>::fromQImage(QImage image, bool upload, bool freeConvBuffer)
 {
     // Make sure the image is not null and is the correct size
     if(!image.isNull() or image.size() != QSize(_width, _height)) {
@@ -83,18 +103,41 @@ bool Image<format>::fromImage(QImage image, bool upload)
         image= image.convertToFormat(QImage::Format_ARGB32);
 
     // Check if we can memcpy or a conversion must be performed
-    if(qtFormat(format) != QImage::Format_Invalid) {
+    if(toQtFormat(format) != QImage::Format_Invalid) {
         memcpy(_hostBuffer, image.constBits(), _bytes);
-    } else {
-        // TODO perform conversion (ARGB32 to format)
+        _hostValid= true;
+        _devValid= false;
+        if(upload)
+            _upload();
+        return true;
     }
+    // Import QImage using the conversion buffer
 
-    // Mark buffers
-    _hostValid= true;
-    _devValid= false;
+    // Make sure the device buffer is allocated
+    if(!_devBuffer and !_allocDev())
+        return false;
+    // Allocate the conversion buffer if necessary
+    if(!_convBuffer and !_allocConv())
+        return false;
 
-    if(upload)
-        _upload();
+    // Upload QImage data to conversion format
+    cl_int err= clEnqueueWriteImage(_queue, _convBuffer, CL_FALSE, _origin, _region,
+                                    0, 0, image.constBits(), 0, nullptr, nullptr);
+    if(checkCLError(err, "clEnqueueWriteImage"))
+        return false;
+
+    // Convert QImage to the desired format
+    // TODO implement, make sure the conversion is blocking (the upload isn't)
+
+    // Now _devBuffer has the valid image, no uploading is necessary
+    _devBuffer= true;
+    _hostBuffer= false;
+
+    // Free the conversion buffer if necessary
+    if(freeConvBuffer) {
+        clReleaseMemObject(_convBuffer);
+        _convBuffer= nullptr;
+    }
 
     return true;
 }
@@ -126,7 +169,9 @@ bool Image<format>::_allocDev()
         err= clReleaseMemObject(_devBuffer);
         checkCLError(err, "clReleaseMemObject");
     }
-    _devBuffer= clCreateBuffer(clctx(), CL_MEM_READ_WRITE, _bytes, nullptr, &err);
+    auto clFormat= toCLFormat(format);
+    _devBuffer= clCreateImage2D(clctx(), CL_MEM_READ_WRITE, &clFormat, _width, _height,
+                                0, nullptr, &err);
     if(checkCLError(err, "clCreateBuffer")) {
         _devBuffer= nullptr;
         qDebug() << "Could not alloc dev buffer!";
@@ -134,6 +179,27 @@ bool Image<format>::_allocDev()
     }
     return true;
 }
+
+template<IFmt format>
+bool Image<format>::_allocConv()
+{
+    // devBuffer must be allocated and convBuffer must not be allocated
+    assert(_devBuffer);
+    assert(!_convBuffer);
+
+    // Conversion buffer is always of type ARGB
+    auto clFormat= toCLFormat(IFmt::ARGB);
+    cl_int err;
+    _convBuffer= clCreateImage2D(clctx(), CL_MEM_READ_WRITE, &clFormat, _width, _height,
+                                 0, nullptr, &err);
+    if(checkCLError(err, "clCreateBuffer")) {
+        _convBuffer= nullptr;
+        qDebug() << "Could not alloc conversion buffer!";
+        return false;
+    }
+    return true;
+}
+
 
 template<IFmt format>
 void Image<format>::_setBlack(bool host, bool dev)

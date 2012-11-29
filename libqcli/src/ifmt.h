@@ -43,7 +43,8 @@ uint8_t iFmtChanCount(ifmt_t format)
     { return format & 0xFF; }
 
 /// Strict enum of image formats supported as template parameter of Image
-enum class IFmt : ifmt_t {
+enum class IFmt : ifmt_t
+{
     ARGB    = iFmtPack(0,  24, 4), /// ARGB:  8-bit unsigned integer [0..255]
     ARGB16  = iFmtPack(1,  48, 4), /// ARGB: 16-bit unsigned integer [0..32768]
     ARGB16F = iFmtPack(2,  48, 4), /// ARGB: 16-bit half-float       [0..1]
@@ -59,11 +60,11 @@ enum class IFmt : ifmt_t {
 //
 
 /// All QCLI formats are valid OpenCL formats
-cl_image_format clFormat(IFmt fmt);
+cl_image_format toCLFormat(IFmt fmt);
 /// @retval QImage::Format_Invalid if there is not a valid equivalent
-QImage::Format qtFormat(IFmt fmt);
+QImage::Format toQtFormat(IFmt fmt);
 /// @retval false if there is not valid equivalent
-bool qcliFormat(QImage::Format src, IFmt& dst);
+bool fromQtFormat(QImage::Format src, IFmt& dst);
 
 } // namespace QCLI
 

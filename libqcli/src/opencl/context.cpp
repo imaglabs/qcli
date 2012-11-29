@@ -49,7 +49,13 @@ bool Context::init(cl_device_type devType, bool glInterop)
     if(!devMgr().selectDevices(devType))
         return false;
     // Create context
-    return createContext(glInterop);
+    if(!createContext(glInterop))
+        return false;
+    // Now we must create the device queues and pass them to the DeviceManager
+    if(!createQueues())
+        return false;
+    _initialized= true;
+    return true;
 }
 
 bool Context::init(QList<int> devIds, bool glInterop)
@@ -58,15 +64,19 @@ bool Context::init(QList<int> devIds, bool glInterop)
     if(!devMgr().selectDevices(devIds))
         return false;
     // Create context
-    return createContext(glInterop);
+    if(!createContext(glInterop))
+        return false;
+    // Now we must create the device queues and pass them to the DeviceManager
+    if(!createQueues())
+        return false;
+    _initialized= true;
+    return true;
 }
 
 bool Context::createContext(bool glInterop)
 {
-    if(_initialized) {
-        qDebug() << "Already initialized.";
+    if(_initialized)
         return false;
-    }
 
     QMutexLocker locker(&_lock);
 
@@ -103,7 +113,25 @@ bool Context::createContext(bool glInterop)
     if(checkCLError(err, "clCreateContext"))
         return false;
 
-    _initialized= true;
+    return true;
+}
+
+bool Context::createQueues()
+{
+    // Get selected devices from the dev manager
+    const auto devs= devMgr().devices();
+    if(!devs.count())
+        return false;
+
+    QVector<cl_command_queue> queues(devs.count());
+    cl_int err;
+    for(int i=0; i<devs.count(); i++) {
+        queues[i]= clCreateCommandQueue(_context, devs[i], CL_QUEUE_PROFILING_ENABLE, &err);
+        if(checkCLError(err, "clCreateCommandQueue"))
+            return false;
+    }
+    // Pass the queues to the DeviceManager
+    devMgr().setQueues(queues);
     return true;
 }
 

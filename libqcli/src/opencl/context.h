@@ -40,6 +40,7 @@ public:
     }
 
     /// Initialize the context for devices of a certain type
+    /// Use CL_DEVICE_TYPE_ALL to get all devices
     /// @retval false on error or if already initialized
     bool init(cl_device_type devType= CL_DEVICE_TYPE_GPU, bool glInterop= true);
     /// Initialize the context for a list devices indexes
@@ -63,6 +64,7 @@ private:
     /// Hide constructor
     Context() = default;
     bool createContext(bool glInterop);
+    bool createQueues();
 
     // State
     mutable QMutex _lock; // Mutable so it can be used in const getters
