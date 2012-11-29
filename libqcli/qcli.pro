@@ -23,10 +23,12 @@ HEADERS += \
     src/util/utils.h \
     src/opencl/context.h \
     src/image.h \
-    src/opencl/devicemanager.h
+    src/opencl/devicemanager.h \
+    src/ifmt.h
 
 SOURCES += \
     src/util/utils.cpp \
     src/opencl/context.cpp \
     src/image.cpp \
-    src/opencl/devicemanager.cpp
+    src/opencl/devicemanager.cpp \
+    src/ifmt.cpp

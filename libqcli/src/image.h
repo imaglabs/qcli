@@ -18,70 +18,56 @@
 #include <QtCore>
 #include <QImage>
 #include <CL/cl.h>
-#include <cstdint>
-#include <assert.h>
+
+#include "ifmt.h"
 
 namespace QCLI {
 
-/// Image format enum type, packs format information such as BPP and channel count.
-typedef uint32_t ifmt_t;
-
-/// Function to pack an image forma
-constexpr ifmt_t iFmtPack(uint8_t type, uint8_t bpp, uint8_t chanCount)
-    { return (type << 16) | (bpp << 8) | chanCount; }
-/// Unpack format type from an ifmt_t
-constexpr uint8_t iFmtType(ifmt_t format)
-    { return (format >> 16) & 0xFF; }
-/// Unpack format BPP from an ifmt_t
-constexpr uint8_t iFmtBPP(ifmt_t format)
-    { return (format >> 8) & 0xFF; }
-/// Unpack format chan count from an ifmt_t
-constexpr uint8_t iFmtChanCount(ifmt_t format)
-    { return format & 0xFF; }
-
-/// Strict enum of image formats supported as template parameter of Image
-enum class ImageFmt : ifmt_t {
-    RGBA24= iFmtPack(0, 24, 4),
-    LUMA8 = iFmtPack(1,  8, 1)
-};
-
 /// \brief QCLI Image. Represents an image with a host and device version
+/// This class is *not* thread-safe.
 
-template<ImageFmt format>
+template<IFmt format>
 class Image
 {
 public:
     /// Creates an empty image of a certain size
-    Image(int width, int height, bool setBlack=false, bool allocHostMem=false,
-          bool allocDevMem=false);
+    Image(int width, int height, bool setBlack=false, bool allocHost=false,
+          bool allocDev=false);
+
     /// Creates an empty image of a certain size
-    Image(QSize size, bool setBlack=true, bool allocHostMem=false, bool allocDevMem=false)
-        : Image(size.width(), size.height(), setBlack, allocHostMem, allocDevMem) { }
+    Image(QSize size, bool setBlack=true, bool allocHost=false, bool allocDev=false)
+        : Image(size.width(), size.height(), setBlack, allocHost, allocDev) { }
+
     /// Creates and image from a QImage
-    Image(QImage image, bool allocHost=false, bool allocDev=false);
+    Image(QImage image, bool allocDev=false, bool upload= false);
 
     ~Image();
 
-private:
-    bool allocHost();
-    bool allocDev();
-    void clear(bool host, bool dev);
+    /// Load data from a QImage (must be of the same size)
+    /// @retval false on error
+    bool fromImage(QImage image, bool upload= false);
 
-    // State
-    mutable QMutex _lock;
+    int width() { return _width; }
+    int height() { return _height; }
+
+private:
+    bool _allocHost();
+    bool _allocDev();
+    void _setBlack(bool host, bool dev);
+    void _upload();
+    void _download();
 
     // Host buffer
     cl_mem _devBuffer= nullptr;
-    int _devSize= 0;
     bool _devValid= false;
     // Device buffer
     char* _hostBuffer= nullptr;
-    int _hostSize= 0;
     bool _hostValid= false;
 
     // Image properties
-    int _width;
-    int _height;
+    int _bytes= 0;
+    int _width= 0;
+    int _height= 0;
 };
 
 } // namespace QCLI
