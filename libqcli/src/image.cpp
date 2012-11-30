@@ -87,7 +87,7 @@ bool Image<format>::fromQImage(QImage image, bool upload, bool freeConvBuffer)
     if(!_hostBuffer and !_allocHost())
         return false;
 
-    // Convert image format if necessary
+    // Make sure the QImage is ARGB32 or RGB32
     if(image.format() != QImage::Format_ARGB32 or image.format() != QImage::Format_RGB32)
         image= image.convertToFormat(QImage::Format_ARGB32);
 
