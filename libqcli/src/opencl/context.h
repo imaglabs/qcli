@@ -52,6 +52,9 @@ public:
     /// Returns true if the context was initialized with OpenGL support
     bool supportsGL();
 
+    /// Returns true if the context supports images of format format
+    bool supportedFormat(const cl_image_format& format);
+
     /// Returns the OpenCL context
     cl_context context();
 
@@ -73,6 +76,9 @@ private:
     // OpenCL
     cl_context _context= nullptr;
     bool _glInterop= true;
+
+    // Supported image formats
+    QVector<cl_image_format> _imgFormats;
 };
 
 /// Global function to access the Context instance

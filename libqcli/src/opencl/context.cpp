@@ -113,6 +113,18 @@ bool Context::createContext(bool glInterop)
     if(checkCLError(err, "clCreateContext"))
         return false;
 
+    // Get list of supported formats
+    cl_uint formatCount;
+    err= clGetSupportedImageFormats(clctx(), CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+                                    0, nullptr, &formatCount);
+    if(checkCLError(err, "clGetSupportedImageFormats") or formatCount<=0)
+        return false;
+    _imgFormats.resize(formatCount);
+    err= clGetSupportedImageFormats(clctx(), CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+                                    formatCount, _imgFormats.data(), nullptr);
+    if(checkCLError(err, "clGetSupportedImageFormats"))
+        return false;
+
     return true;
 }
 
@@ -149,6 +161,20 @@ cl_context Context::context()
         return nullptr;
     QMutexLocker locker(&_lock);
     return _context;
+}
+
+bool Context::supportedFormat(const cl_image_format& format)
+{
+    if(!_initialized and !init())
+        return false;
+    QMutexLocker locker(&_lock);
+    foreach(const cl_image_format& fmt, _imgFormats) {
+        if(format.image_channel_data_type==fmt.image_channel_data_type and
+           format.image_channel_order==fmt.image_channel_order) {
+            return true;
+        }
+    }
+    return false;
 }
 
 } // namespace QCLI

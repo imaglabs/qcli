@@ -26,14 +26,18 @@ namespace QCLI {
 //
 
 template<IFmt format>
+Image<format>::Image(QImage image, bool allocDev, int devId, bool upload, bool freeConvBuffer)
+    : Image(image.width(), image.height(), devId, false, false, allocDev)
+{
+    assert(!image.isNull());
+    assert(!upload or allocDev);
+    fromQImage(image, upload, freeConvBuffer);
+}
+
+template<IFmt format>
 Image<format>::Image(int width, int height, int devId, bool setBlack, bool allocHost, bool allocDev)
     : _width(width), _height(height), _devId(devId)
 {
-    // Use {} ctor when QtCreator parses it ok...
-    _region[0]= width;
-    _region[1]= height;
-    _region[2]= 1;
-
     assert(width > 0);
     assert(height > 0);
     assert(!setBlack or (allocHost or allocDev));
@@ -42,34 +46,19 @@ Image<format>::Image(int width, int height, int devId, bool setBlack, bool alloc
     // Get the device queue and verify devId at the same time
     _queue= devMgr().queue(devId)
     assert(_queue);
+    // Verify the image format is supported
+    assert(ctx().supportedFormat(toCLFormat<format>()));
+
+    // Use {} ctor when QtCreator parses it ok...
+    _region[0]= width;
+    _region[1]= height;
+    _region[2]= 1;
 
     if(allocDev)  _allocDev();
     if(allocHost) _allocHost();
 
     if(setBlack)
         _setBlack(allocHost, allocDev);
-}
-
-template<IFmt format>
-Image<format>::Image(QImage image, bool allocDev, int devId, bool upload, bool freeConvBuffer)
-    : _width(image.width()), _height(image.height()), _devId(devId)
-{    
-    // Use {} ctor when QtCreator parses it ok...
-    _region[0]= width;
-    _region[1]= height;
-    _region[2]= 1;
-
-    assert(!image.isNull() and image.width()>0 and image.height()>0);
-    assert(!upload or allocDev);
-    // Make sure the context is initialized so the device queue is ready
-    if(!ctx().initialized()) ctx().init();
-    // Get the device queue and verify devId at the same time
-    _queue= devMgr().queue(devId)
-    assert(_queue);
-
-    if(allocDev)
-        _allocDev();
-    fromQImage(image, upload, freeConvBuffer);
 }
 
 template<IFmt format>
