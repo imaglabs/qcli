@@ -22,6 +22,7 @@ namespace QCLI {
 
 DeviceManager::DeviceManager()
 {
+    qDebug() << "Init start";
     // Get the platform information
     cl_int err= clGetPlatformIDs(1, &_platform, nullptr);
     if(checkCLError(err, "clGetPlatformIDs")) {
@@ -34,6 +35,7 @@ DeviceManager::DeviceManager()
     _allDevs= devicesOfType(CL_DEVICE_TYPE_ALL);
     if(_allDevs.empty())
         _initError.ref();
+    qDebug() << "Init OK";
 }
 
 DeviceManager::~DeviceManager()

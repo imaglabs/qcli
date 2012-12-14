@@ -2,7 +2,7 @@ TEMPLATE = lib
 VERSION = 0.1.0
 
 CONFIG += qt warn_on release
-QT += core
+QT += core opengl
 
 DESTDIR = bin
 OBJECTS_DIR = obj
@@ -25,7 +25,7 @@ HEADERS += \
     src/opencl/devicemanager.h \
     src/util/utils.h \
     src/ifmt.h \
-    src/image.h \        
+    src/image.h \
     src/QCLI
 
 SOURCES += \

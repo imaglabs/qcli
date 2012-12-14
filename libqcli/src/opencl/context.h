@@ -55,7 +55,7 @@ public:
     /// Returns true if the context supports images of format format
     bool supportedFormat(const cl_image_format& format);
 
-    /// Returns the OpenCL context
+    /// Returns the OpenCL context#include <GL/glx.h>
     cl_context context();
 
     /// Disable copying

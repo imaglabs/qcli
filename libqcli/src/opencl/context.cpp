@@ -85,42 +85,61 @@ bool Context::createContext(bool glInterop)
     QVector<cl_context_properties> props;
     if(_glInterop) {
         // Add OpenGL properties
-        #ifdef __MACOSX // Apple (untested)
+        #ifdef __MACOSX
+            // Apple (untested)
             props << CL_CGL_SHAREGROUP_KHR;
             props << reinterpret_cast<cl_context_properties>(CGLGetShareGroup(CGLGetCurrentContext()));
             props << CL_CONTEXT_PLATFORM;
             props << reinterpret_cast<cl_context_properties>(devMgr().platform());
-        #elif _WIN32 // Windows (untested)
+        #elif _WIN32
+            // Windows (untested)
             props << CL_GL_CONTEXT_KHR
             props << reinterpret_cast<cl_context_properties>(wglGetCurrentContext());
             props << CL_WGL_HDC_KHR
             props << reinterpret_cast<cl_context_properties>(wglGetCurrentDC());
-        #else // Linux/GLX
+        #else
+            // Linux/GLX
             props << CL_GL_CONTEXT_KHR;
-            props << reinterpret_cast<cl_context_properties>(glXGetCurrentContext());
+            props << (cl_context_properties)glXGetCurrentContext();
             props << CL_GLX_DISPLAY_KHR;
-            props << reinterpret_cast<cl_context_properties>(glXGetCurrentDisplay());
-            props << reinterpret_cast<cl_context_properties>(devMgr().platform());
+            props << (cl_context_properties)glXGetCurrentDisplay();
+            props << (cl_context_properties)(devMgr().platform());
         #endif
         props << 0;
     }
 
-    // Create OpenCL context
+
+    cl_context_properties pro[]= {
+        CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
+        CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
+        CL_CONTEXT_PLATFORM, (cl_context_properties)(devMgr().platform()),
+        0
+    };
     cl_int err;
-    const auto propsPtr= props.empty() ? nullptr : props.data();
+    cl_device_id* devs= &(devMgr().devices()[0]); // Get selected devices from the dev manager
+    _context= clCreateContext(pro, 1, devs, nullptr, nullptr, &err);
+    if(checkCLError(err, "clCreateContext11"))
+        return false;
+
+
+    // Create OpenCL context
+    /*
+    cl_int err;
+    const auto propsPtr= props.count() ? props.data() : nullptr;
     const auto devs= devMgr().devices(); // Get selected devices from the dev manager
-    _context= clCreateContext(propsPtr, devs.size(), devs.data(), nullptr, nullptr, &err);
+    _context= clCreateContext(propsPtr, devs.count(), devs.data(), nullptr, nullptr, &err);
     if(checkCLError(err, "clCreateContext"))
         return false;
+    */
 
     // Get list of supported formats
     cl_uint formatCount;
-    err= clGetSupportedImageFormats(clctx(), CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+    err= clGetSupportedImageFormats(_context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
                                     0, nullptr, &formatCount);
     if(checkCLError(err, "clGetSupportedImageFormats") or formatCount<=0)
         return false;
     _imgFormats.resize(formatCount);
-    err= clGetSupportedImageFormats(clctx(), CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
+    err= clGetSupportedImageFormats(_context, CL_MEM_READ_WRITE, CL_MEM_OBJECT_IMAGE2D,
                                     formatCount, _imgFormats.data(), nullptr);
     if(checkCLError(err, "clGetSupportedImageFormats"))
         return false;

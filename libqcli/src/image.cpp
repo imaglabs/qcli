@@ -66,8 +66,6 @@ Image<format>::~Image()
 {
     if(_devBuffer)
         clReleaseMemObject(_devBuffer);
-    if(_convBuffer)
-        clReleaseMemObject(_convBuffer);
     free(_hostBuffer);
 }
 
@@ -76,7 +74,7 @@ Image<format>::~Image()
 //
 
 template<IFmt format>
-bool Image<format>::fromQImage(QImage image, bool upload, bool freeConvBuffer)
+bool Image<format>::fromQImage(QImage image, bool upload)
 {
     // Make sure the image is not null and is the correct size
     if(!image.isNull() or image.size() != QSize(_width, _height)) {
@@ -100,33 +98,31 @@ bool Image<format>::fromQImage(QImage image, bool upload, bool freeConvBuffer)
             _upload();
         return true;
     }
-    // Import QImage using the conversion buffer
+    // Map QImage to the GPU to perform a conversion
 
     // Make sure the device buffer is allocated
     if(!_devBuffer and !_allocDev())
         return false;
-    // Allocate the conversion buffer if necessary
-    if(!_convBuffer and !_allocConv())
-        return false;
 
     // Upload QImage data to conversion format
-    cl_int err= clEnqueueWriteImage(_queue, _convBuffer, CL_FALSE, _origin, _region,
-                                    0, 0, image.constBits(), 0, nullptr, nullptr);
-    if(checkCLError(err, "clEnqueueWriteImage"))
+    cl_int err;
+    auto qimageFormat= toCLFormat<IFmt::ARGB>();
+    cl_mem convBuffer= clCreateImage2D(clctx(), CL_MEM_READ_ONLY, &qimageFormat, _width,
+                                       _height, _width*4, image.constBits(), &err);
+    if(checkCLError(err, "clCreateImage2D"))
         return false;
 
     // Convert QImage to the desired format
     // TODO implement, make sure the conversion is blocking (the upload isn't)
 
+    // Unmap
+    err= clReleaseMemObject(convBuffer);
+    if(checkCLError(err, "clReleaseMemObject"))
+        return false;
+
     // Now _devBuffer has the valid image, no uploading is necessary
     _devBuffer= true;
     _hostBuffer= false;
-
-    // Free the conversion buffer if necessary
-    if(freeConvBuffer) {
-        clReleaseMemObject(_convBuffer);
-        _convBuffer= nullptr;
-    }
 
     return true;
 }
@@ -164,26 +160,6 @@ bool Image<format>::_allocDev()
     if(checkCLError(err, "clCreateBuffer")) {
         _devBuffer= nullptr;
         qDebug() << "Could not alloc dev buffer!";
-        return false;
-    }
-    return true;
-}
-
-template<IFmt format>
-bool Image<format>::_allocConv()
-{
-    // devBuffer must be allocated and convBuffer must not be allocated
-    assert(_devBuffer);
-    assert(!_convBuffer);
-
-    // Conversion buffer is always of type ARGB
-    auto clFormat= toCLFormat<IFmt::ARGB>();
-    cl_int err;
-    _convBuffer= clCreateImage2D(clctx(), CL_MEM_READ_WRITE, &clFormat, _width, _height,
-                                 0, nullptr, &err);
-    if(checkCLError(err, "clCreateBuffer")) {
-        _convBuffer= nullptr;
-        qDebug() << "Could not alloc conversion buffer!";
         return false;
     }
     return true;

@@ -1,18 +1,17 @@
-#include <iostream> 
-#include <context.h>
+#include <QtCore>
+#include <QCLI>
 
 using namespace std;
 using namespace QCLI;
 
-int main() 
+int main()
 {
-  
-  cout << "QCLI Test" << endl;
-  
-  auto context= QCLI::ctx();
-  context.init();
-  
-  cout << "End." << endl;
-  
-  return EXIT_SUCCESS;
+    qDebug() << "QCLI Test";
+
+    auto& context= QCLI::ctx();
+    context.init(CL_DEVICE_TYPE_GPU);
+    qDebug() << context.initialized();
+
+    qDebug() << "End";
+    return EXIT_SUCCESS;
 }

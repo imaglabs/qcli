@@ -77,7 +77,7 @@ bool checkCLError_func(cl_int error, string funcName, string message)
     if(error == CL_SUCCESS)
         return false;
     cerr << "** OpenCL Error '" << clErrorToString(error) << "' ("<< funcName <<")";
-    if(message.empty())
+    if(!message.empty())
         cerr << ": " << message << "." << endl;
     else
         cerr << "." << endl;

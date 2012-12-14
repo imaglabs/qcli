@@ -49,7 +49,7 @@ public:
 
     /// Load data from a QImage (must be of the same size)
     /// @retval false on error
-    bool fromQImage(QImage image, bool upload= false, bool freeConvBuffer=false);
+    bool fromQImage(QImage image, bool upload= true);
 
     int width() { return _width; }
     int height() { return _height; }
@@ -57,7 +57,6 @@ public:
 private:
     bool _allocHost();
     bool _allocDev();
-    bool _allocConv();
     void _setBlack(bool host, bool dev);
     void _upload();
     void _download();
@@ -68,8 +67,6 @@ private:
     // Device buffer
     cl_mem _devBuffer= nullptr;
     bool _devValid= false;
-    // Device conversion buffer (always of type ARGB)
-    cl_mem _convBuffer= nullptr;
 
     // Image properties
     int _width;  // Forced init in the ctors
