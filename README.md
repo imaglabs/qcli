@@ -21,5 +21,7 @@ QCLI is released under the LGPL version 2 (see COPYING):
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
     Library General Public License for more details.
 
+
 Required Ubuntu packages:
+
     qt4-dev-tools opencl-dev
