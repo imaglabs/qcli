@@ -27,29 +27,37 @@ namespace QCLI {
 
 /** \brief Represents a QCLI image that has both a host and device version.
  *
- *  This class is *not* thread-safe.
+ *  This class is *not* thread-safe. TODO make thread safe?
  */
 
-template<IFmt format>
 class Image
 {
 public:
     /// Creates an empty image of a certain size
-    Image(int width, int height, int devId= 0, bool setBlack=false, bool allocHost=false,
+    Image(int width, int height, IFmt format=IFmt::ARGB, int devId= 0, bool setBlack=false, bool allocHost=false,
           bool allocDev=false);
 
     /// Creates an empty image of a certain size
-    Image(QSize size, int devId= 0, bool setBlack=true, bool allocHost=false, bool allocDev=false)
-        : Image(size.width(), size.height(), devId, setBlack, allocHost, allocDev) { }
+    Image(QSize size, IFmt format=IFmt::ARGB, int devId= 0, bool setBlack=true, bool allocHost=false, bool allocDev=false)
+        : Image(size.width(), size.height(), format, devId, setBlack, allocHost, allocDev) { }
 
-    /// Creates and image from a QImage
-    Image(QImage image, bool allocDev=false, int devId=0, bool upload=false, bool freeConvBuffer=false);
+    /// Creates an empty image of a preset size
+    Image(ISize size, IFmt format=IFmt::ARGB, int devId= 0, bool setBlack=true, bool allocHost=false, bool allocDev=false)
+        : Image(iSizeWidth(size), iSizeHeight(size), format, devId, setBlack, allocHost, allocDev) { }
+
+    /// Creates an image from a QImage
+    Image(QImage image, int devId=0, bool allocDev=false, bool upload=false);
+
+    /// Creates an image from a file (using QImage to load)
+    /// @param path must be a readable image path
+    Image(QString path, int devId=0, bool allocDev=false, bool upload=false)
+        : Image(QImage(path), devId, allocDev, upload) { }
 
     ~Image();
 
     /// Load data from a QImage (must be of the same size)
     /// @retval false on error
-    bool fromQImage(QImage image, bool upload= true);
+    bool fromQImage(QImage image);
 
     int width() { return _width; }
     int height() { return _height; }
@@ -68,10 +76,11 @@ private:
     cl_mem _devBuffer= nullptr;
     bool _devValid= false;
 
-    // Image properties
-    int _width;  // Forced init in the ctors
-    int _height; // Forced init in the ctors
-    int _devId;  // Forced init in the ctors
+    // Image properties. All properties but _bytes are initialized in the ctors.
+    int _width;
+    int _height;
+    IFmt _format;
+    int _devId;
     int _bytes= 0;
 
     // Copy of the device queue (OpenCL calls using queue are thread-safe)

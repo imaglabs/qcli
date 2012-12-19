@@ -8,9 +8,14 @@ int main()
 {
     qDebug() << "QCLI Test";
 
-    auto& context= QCLI::ctx();
-    context.init(CL_DEVICE_TYPE_GPU);
-    qDebug() << context.initialized();
+    // Manually initialize the context
+    //auto& context= QCLI::qcliCtx();
+    //context.init();
+    // ...or
+    //qcliCtx().init();
+
+    Image image("input.jpg");
+
 
     qDebug() << "End";
     return EXIT_SUCCESS;

@@ -11,7 +11,7 @@ MOC_DIR = obj
 
 LIBS += -L../libqcli/bin -lqcli
 INCLUDEPATH += ../libqcli/src
-QMAKE_LFLAGS += -Wl,-R,\'../libqcli/bin\'
+QMAKE_LFLAGS += -Wl,-R,\'../../libqcli/bin\'
 
 QMAKE_CXX = g++-4.7 # clang++
 QMAKE_CXXFLAGS = -std=c++11 -march=native -O3 -fomit-frame-pointer -fPIC

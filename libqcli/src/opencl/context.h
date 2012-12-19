@@ -17,6 +17,7 @@
 
 #include <QtCore>
 #include <CL/cl.h>
+// CL-GL interop
 #include <CL/cl_gl.h>
 
 namespace QCLI {
@@ -41,8 +42,11 @@ public:
 
     /// Initialize the context for devices of a certain type
     /// Use CL_DEVICE_TYPE_ALL to get all devices
+    /// NOTICE, in order to use OpenGL interop, the GL context must be created
+    /// *before* initializing Context, otherwise clCreateContext will fail
     /// @retval false on error or if already initialized
-    bool init(cl_device_type devType= CL_DEVICE_TYPE_GPU, bool glInterop= true);
+    bool init(cl_device_type devType= CL_DEVICE_TYPE_GPU, bool glInterop= false);
+
     /// Initialize the context for a list devices indexes
     /// @retval false on error or if already initialized
     bool init(QList<int> devIds, bool glInterop= true);
@@ -50,7 +54,7 @@ public:
     /// Returns true if the context was initialized
     bool initialized() const { return _initialized; }
     /// Returns true if the context was initialized with OpenGL support
-    bool supportsGL();
+    bool glInterop();
 
     /// Returns true if the context supports images of format format
     bool supportedFormat(const cl_image_format& format);
@@ -82,9 +86,9 @@ private:
 };
 
 /// Global function to access the Context instance
-inline Context& ctx() { return Context::instance(); }
+inline Context& qcliCtx() { return Context::instance(); }
 /// Global function to access the OpenCL context object
-inline cl_context clctx() { return ctx().context(); }
+inline cl_context clCtx() { return qcliCtx().context(); }
 
 
 } // namespace QCLI

@@ -50,12 +50,9 @@ enum class IFmt : ifmt_t
 };
 
 // Unpack functions for IFmt (why is this necessary?)
-/// Unpack format type from a IFmt
-constexpr inline uint8_t iFmtType(IFmt format) { return (((ifmt_t)format) >> 16) & 0xFF; }
-/// Unpack format BPP from an IFmt
-constexpr inline uint8_t iFmtBPP(IFmt format) { return (((ifmt_t)format) >> 8) & 0xFF; }
-/// Unpack format chan count from an IFmt
-constexpr inline uint8_t iFmtChanCount(IFmt format) { return ((ifmt_t)format) & 0xFF; }
+constexpr inline uint8_t iFmtType(IFmt format) { return iFmtType((ifmt_t)format); }
+constexpr inline uint8_t iFmtBPP(IFmt format) { return iFmtBPP((ifmt_t)format); }
+constexpr inline uint8_t iFmtChanCount(IFmt format) { return iFmtChanCount((ifmt_t)format); }
 
 
 //
@@ -63,13 +60,40 @@ constexpr inline uint8_t iFmtChanCount(IFmt format) { return ((ifmt_t)format) & 
 //
 
 /// All QCLI formats are valid OpenCL formats
-template<IFmt fmt> constexpr
-cl_image_format toCLFormat();
+cl_image_format toCLFormat(IFmt format);
 /// @retval QImage::Format_Invalid if there is not a valid equivalent
-template<IFmt fmt> constexpr
-QImage::Format toQtFormat();
+QImage::Format toQtFormat(IFmt format);
 /// @retval false if there is not valid equivalent
-bool fromQtFormat(QImage::Format src, IFmt& dst);
+IFmt fromQtFormat(QImage::Format src, bool* error= nullptr);
+
+
+///
+/// Util enum listing common image resolutions (TODO use QSize enum with Qt5)
+///
+
+/// Packs image resolution 0xWWWWHHHH (W uint16_t width, H uint16_t height)
+typedef uint32_t isize_t;
+
+/// Packs an image resolution
+constexpr inline
+ifmt_t iSizePack(uint16_t width, uint16_t height)
+    { return (width << 16) | height; }
+
+/// Unpack resolution width from an isize_t
+constexpr inline uint16_t iSizeWidth(isize_t size) { return (size >> 16) & 0xFFFF; }
+/// Unpack resolution height from an isize_t
+constexpr inline uint16_t iSizeHeight(isize_t size) { return size & 0xFFFF; }
+
+enum class ISize : isize_t
+{
+    VGA    = iSizePack( 640,  480),
+    HD     = iSizePack(1280,  720),
+    FullHD = iSizePack(1920, 1080)
+};
+
+constexpr inline uint16_t iSizeWidth(ISize size) { return iSizeWidth((isize_t)size); }
+constexpr inline uint16_t iSizeHeight(ISize size) { return iSizeHeight((isize_t)size); }
+
 
 } // namespace QCLI
 

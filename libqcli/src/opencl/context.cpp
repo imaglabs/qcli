@@ -16,7 +16,7 @@
 #include "util/utils.h"
 #include "devicemanager.h"
 
-// Includes for OS-specific OpenGL support
+// OS-specific OpenGL support
 #ifdef __MACOSX
 #  include <OpenGL/OpenGL.h>
 #elif _WIN32
@@ -24,6 +24,7 @@
 #else // Linux
 #  include <GL/glx.h>
 #endif
+
 
 namespace QCLI {
 
@@ -105,32 +106,16 @@ bool Context::createContext(bool glInterop)
             props << (cl_context_properties)glXGetCurrentDisplay();
             props << (cl_context_properties)(devMgr().platform());
         #endif
-        props << 0;
+        props << 0; // Can't use nullptr here
     }
 
-
-    cl_context_properties pro[]= {
-        CL_GL_CONTEXT_KHR, (cl_context_properties)glXGetCurrentContext(),
-        CL_GLX_DISPLAY_KHR, (cl_context_properties)glXGetCurrentDisplay(),
-        CL_CONTEXT_PLATFORM, (cl_context_properties)(devMgr().platform()),
-        0
-    };
-    cl_int err;
-    cl_device_id* devs= &(devMgr().devices()[0]); // Get selected devices from the dev manager
-    _context= clCreateContext(pro, 1, devs, nullptr, nullptr, &err);
-    if(checkCLError(err, "clCreateContext11"))
-        return false;
-
-
     // Create OpenCL context
-    /*
     cl_int err;
     const auto propsPtr= props.count() ? props.data() : nullptr;
     const auto devs= devMgr().devices(); // Get selected devices from the dev manager
     _context= clCreateContext(propsPtr, devs.count(), devs.data(), nullptr, nullptr, &err);
     if(checkCLError(err, "clCreateContext"))
-        return false;
-    */
+        return false;   
 
     // Get list of supported formats
     cl_uint formatCount;
@@ -151,22 +136,24 @@ bool Context::createQueues()
 {
     // Get selected devices from the dev manager
     const auto devs= devMgr().devices();
-    if(!devs.count())
+    const int devCount= devs.count();
+    if(!devCount)
         return false;
 
-    QVector<cl_command_queue> queues(devs.count());
+    QVector<cl_command_queue> queues(devCount);
     cl_int err;
-    for(int i=0; i<devs.count(); i++) {
+    for(int i=0; i<devCount; i++) {
         queues[i]= clCreateCommandQueue(_context, devs[i], CL_QUEUE_PROFILING_ENABLE, &err);
         if(checkCLError(err, "clCreateCommandQueue"))
             return false;
     }
     // Pass the queues to the DeviceManager
     devMgr().setQueues(queues);
+
     return true;
 }
 
-bool Context::supportsGL()
+bool Context::glInterop()
 {
     if(!_initialized and !init())
         return false;

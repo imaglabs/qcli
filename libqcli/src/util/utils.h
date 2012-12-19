@@ -29,7 +29,7 @@ using namespace std;
 string clErrorToString(cl_int err);
 
 /// Macro to pass the function name to checkCLError_func
-#define checkCLError(error, message) (checkCLError_func(error, __func__, message))
+#define checkCLError(error, message) (QCLI::checkCLError_func(error, __func__, message))
 /// Checks for errors in OpenCL API calls, and prints useful information
 bool checkCLError_func(cl_int error, string funcName, string message);
 
