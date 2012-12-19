@@ -171,12 +171,14 @@ void Image::_setBlack(bool host, bool dev)
     bool wroteDev= false;
 
     // Clear host memory
-    if(host and _hostBuffer) {
+    if(host) {
+        if(!_hostBuffer and !_allocHost()) return;
         memset(_hostBuffer, 0, _bytes);
         wroteHost= true;
     }
     // Clear dev memory
-    if(dev and _devBuffer) {
+    if(dev) {
+        if(!_devBuffer and !_allocDev()) return;
         /*#ifdef CL_VERSION_1_2
             cl_int err;
             err= clEnqueueFillImage(_queue, _devBuffer, clFillingBlack().data(),
@@ -197,8 +199,8 @@ void Image::_upload()
     // The host (device) buffer should exist
     assert(_hostBuffer);
     // Make sure the device (dest) buffer is allocated
-    if(!_devBuffer)
-        _allocDev();
+    if(!_devBuffer and !_allocDev())
+        return;
 
     if(!_hostValid) {
         qDebug() << "Image::_upload: Host buffer is invalid.";
@@ -220,8 +222,8 @@ void Image::_download()
     // The device (source) buffer should exist
     assert(_devBuffer);
     // Make sure the host (dest) buffer is allocated
-    if(!_hostBuffer)
-        _allocHost();
+    if(!_hostBuffer and !_allocHost())
+        return;
 
     if(!_devValid) {
         qDebug() << "Image::_download: Device buffer is invalid.";
