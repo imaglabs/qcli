@@ -194,18 +194,48 @@ void Image::_setBlack(bool host, bool dev)
 
 void Image::_upload()
 {
-    // The host buffer should exist
+    // The host (device) buffer should exist
     assert(_hostBuffer);
-    // Make sure the device buffer is allocated
-    if(!_devBuffer) _allocDev();
+    // Make sure the device (dest) buffer is allocated
+    if(!_devBuffer)
+        _allocDev();
 
-    // Upload the buffer
+    if(!_hostValid) {
+        qDebug() << "Image::_upload: Host buffer is invalid.";
+        return;
+    }
+
+    // Upload
+    cl_int err;
+    err= clEnqueueWriteImage(_queue, _devBuffer, CL_TRUE, _origin, _region, 0, 0,
+                             _hostBuffer, 0, nullptr, nullptr);
+    if(checkCLError(err, "clEnqueueCopyImage"))
+        return;
 
     _devValid= true;
 }
 
 void Image::_download()
 {
+    // The device (source) buffer should exist
+    assert(_devBuffer);
+    // Make sure the host (dest) buffer is allocated
+    if(!_hostBuffer)
+        _allocHost();
+
+    if(!_devValid) {
+        qDebug() << "Image::_download: Device buffer is invalid.";
+        return;
+    }
+
+    // Download
+    cl_int err;
+    err= clEnqueueReadImage(_queue, _devBuffer, CL_TRUE, _origin, _region, 0, 0,
+                            _hostBuffer, 0, nullptr, nullptr);
+    if(checkCLError(err, "clEnqueueCopyImage"))
+        return;
+
+    _hostValid= true;
 }
 
 

@@ -57,7 +57,7 @@ public:
 
     /// Load data from a QImage (must be of the same size)
     /// @retval false on error
-    bool fromQImage(QImage image);
+    bool fromQImage(QImage image);       
 
     int width() { return _width; }
     int height() { return _height; }
